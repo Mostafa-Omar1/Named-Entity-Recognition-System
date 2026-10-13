@@ -15,7 +15,9 @@ class RNNPredictor:
     def __init__(self, arch: str, device="cpu"):
         ckpt = torch.load(MODELS_DIR / arch / "model.pt", map_location=device, weights_only=True)
         self.vocab = Vocab.from_dict(ckpt["vocab"])
-        self.model = RNNTagger(**ckpt["config"]).to(device).eval()
+        with torch.device("cpu"):
+            self.model = RNNTagger(**ckpt["config"])
+        self.model = self.model.to(device).eval()
         self.model.load_state_dict(ckpt["state_dict"])
         self.device = device
 

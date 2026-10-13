@@ -17,7 +17,22 @@ All models are evaluated with **seqeval** (entity-level precision, recall and F1
 
 ## Results (CoNLL-2003 test set)
 
-<!-- RESULTS -->
+Entity-level **seqeval** scores (an entity counts as correct only if its span *and* type match exactly):
+
+| Model | Precision | Recall | **F1** | PER F1 | ORG F1 | LOC F1 | MISC F1 | Dev F1 |
+|---|---|---|---|---|---|---|---|---|
+| LSTM | 0.8079 | 0.8465 | **0.8267** | 0.9243 | 0.7555 | 0.8522 | 0.7130 | 0.8852 |
+| BiLSTM | 0.8872 | 0.8964 | **0.8918** | 0.9517 | 0.8557 | 0.9124 | 0.7920 | 0.9357 |
+| BiLSTM + CRF | 0.9007 | 0.8947 | **0.8977** | 0.9529 | 0.8698 | 0.9170 | 0.7898 | 0.9419 |
+| BERT-base-cased (fine-tuned) | 0.9069 | 0.9191 | **0.9129** | 0.9631 | 0.8969 | 0.9312 | 0.7970 | 0.9480 |
+
+Per-entity precision and recall for every model are in [`results/comparison.md`](results/comparison.md), and the raw seqeval reports are in `results/*_metrics.json`.
+
+**Takeaways**
+* **Bidirectionality gives the largest jump** (+6.5 F1). A left-to-right LSTM must decide on "Manchester" before it reads "United". ORG gains the most (+10 F1), because many organizations are only recognisable from the words that follow.
+* **The CRF adds +0.6 F1 overall**, mostly through **precision** (0.887 → 0.901) and the ORG class (+1.4 F1), the class with the most multi-token names. The [section below](#where-does-the-crf-help-boundary-detection) explains why.
+* **Fine-tuned BERT is best on every entity type** (91.3 F1). Pre-training on billions of words gives it world knowledge and contextual sub-word representations that GloVe + char-CNN cannot match. It cuts *missed* entities in half (67 vs 133).
+* **MISC is the hardest class** for every model (~0.79–0.80). It is a heterogeneous mix of nationalities, events and titles, and it has the fewest training examples.
 
 ---
 
@@ -76,7 +91,39 @@ seqeval entity-level metrics: an entity counts as correct only if **both its bou
 
 ## Where does the CRF help? Boundary detection
 
-<!-- CRF -->
+A softmax tagger (LSTM, BiLSTM and even BERT here) picks each tag **independently**. Nothing stops it from producing sequences that cannot be decoded into clean spans:
+
+```
+REAL   MADRID  V  BARCELONA          gold:          [REAL MADRID]ORG  [BARCELONA]ORG
+B-ORG  B-ORG   O  B-ORG              BiLSTM:        [REAL]ORG [MADRID]ORG  ✗  (span split in two)
+B-ORG  I-ORG   O  B-ORG              BiLSTM + CRF:  [REAL MADRID]ORG       ✓
+```
+
+The CRF scores the **whole tag sequence**: each tag's emission score plus a learned **transition score** between consecutive tags. Viterbi decoding then finds the globally best sequence. The learned transition matrix rediscovered the IOB2 grammar from data alone, with no hard-coded rules:
+
+![CRF transitions](results/crf_transitions.png)
+
+* `O → I-X` is strongly penalised (−2.5 to −3.7), so an entity cannot *start* with `I-`.
+* `B-X → I-Y` with X ≠ Y is penalised (for example `B-PER → I-ORG` −2.7), so an entity cannot change type halfway through.
+* `B-X → I-X` and `I-X → I-X` are rewarded (+0.4 to +1.9), so multi-word names stay in one piece.
+* `B-X → B-X` is penalised (`B-PER → B-PER` −2.8). Two adjacent same-type entities are rare, so the CRF prefers to *join* tokens like "Sheffield Wednesday" rather than split them.
+
+**Measured effect on the test set** (`python -m ner.compare`):
+
+| Model | Correct spans | Boundary errors | Type + boundary errors | Spurious | **Invalid IOB transitions** |
+|---|---|---|---|---|---|
+| LSTM | 4781 | 304 | 245 | 187 | 313 |
+| BiLSTM | 5063 | 123 | 105 | 146 | 72 |
+| **BiLSTM + CRF** | 5053 | **88** (−28 %) | **67** (−36 %) | **124** | **2** |
+| BERT (softmax head) | 5191 | 87 | 85 | 136 | 49 |
+
+![error analysis](results/error_analysis.png)
+
+* Invalid IOB transitions drop from **72 to 2**. The BiLSTM + CRF output is almost always a well-formed span sequence.
+* **Boundary errors** (right type, wrong span) fall by 28 %, and errors that are wrong in both type and boundary fall by 36 %. The gain is largest on multi-token names: *Sheffield Wednesday*, *NY JETS*, *Basketball Association*, *Nader Jokhadar*.
+* The trade-off is that the CRF is a little more conservative: slightly more missed entities (133 vs 119) and a lower MISC recall. That is why its F1 gain (+0.6) is smaller than its precision gain (+1.4).
+* Even BERT, without a CRF, emits 49 invalid transitions. Adding a CRF head on top of a transformer is a common next step.
+* 21 test sentences are tagged perfectly *only* thanks to the CRF. They are rendered with color-coded spans in [`results/crf_examples.html`](results/crf_examples.html).
 
 ---
 
@@ -85,9 +132,11 @@ seqeval entity-level metrics: an entity counts as correct only if **both its bou
 ```bash
 python app.py
 ```
-Open http://127.0.0.1:7860, type or paste text, and the entities are highlighted **as you type** in color-coded spans (PER red, ORG blue, LOC green, MISC yellow), with a table of detected entities. You can switch model in the dropdown, and the **Compare models** tab shows all four models side by side on the same text.
+Open http://127.0.0.1:7860, type or paste text, and the entities are highlighted **as you type** (`Textbox.change` events) in color-coded spans (PER red, ORG blue, LOC green, MISC yellow), with a table of detected entities and their character offsets. The fine-tuned BERT model is the default. You can switch model in the dropdown, and the **Compare models** tab shows all four models side by side on the same text.
 
-![app](results/app_screenshot.png)
+| Analyze (real-time highlighting) | Compare models |
+|---|---|
+| ![app](results/app_analyze.jpg) | ![compare](results/app_compare.jpg) |
 
 ---
 
@@ -103,7 +152,7 @@ python -m ner.eda                            # dataset exploration -> results/ed
 python -m ner.train_rnn --arch lstm          # ~6 min on a GTX 1660 Super
 python -m ner.train_rnn --arch bilstm        # ~6 min
 python -m ner.train_rnn --arch bilstm_crf    # ~20 min
-python -m ner.train_transformer --model bert-base-cased   # ~25 min (or distilbert-base-cased)
+python -m ner.train_transformer --model bert-base-cased   # ~40 min on a GTX 1660 Super (or distilbert-base-cased)
 python -m ner.compare                        # tables, plots, CRF analysis -> results/
 python app.py                                # web app
 ```

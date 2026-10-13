@@ -2,6 +2,7 @@
 
     python app.py
 """
+import threading
 from functools import lru_cache
 
 import gradio as gr
@@ -23,8 +24,18 @@ EXAMPLES = [
 ]
 
 
-@lru_cache(maxsize=None)
+_load_lock = threading.Lock()
+
+
 def get_predictor(key):
+    # Gradio runs events in parallel threads; load models one at a time (from_pretrained
+    # temporarily switches torch's default device, which must not leak into other loads).
+    with _load_lock:
+        return _load(key)
+
+
+@lru_cache(maxsize=None)
+def _load(key):
     return load_predictor(key, device=DEVICE)
 
 

@@ -25,5 +25,14 @@
     "missed": 133,
     "spurious": 124,
     "invalid_transitions": 2
+  },
+  "transformer": {
+    "correct": 5191,
+    "type_error": 225,
+    "boundary_error": 87,
+    "both_error": 85,
+    "missed": 67,
+    "spurious": 136,
+    "invalid_transitions": 49
   }
 }

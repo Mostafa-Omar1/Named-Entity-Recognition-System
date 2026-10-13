@@ -12,8 +12,9 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import torch
 
-from . import ENTITY_COLORS, ENTITY_TYPES, RESULTS_DIR
+from . import ENTITY_COLORS, ENTITY_TYPES, LABELS, MODELS_DIR, RESULTS_DIR
 from .data import get_spans, invalid_transitions, load_conll
 
 NAMES = {"lstm": "LSTM", "bilstm": "BiLSTM", "bilstm_crf": "BiLSTM + CRF", "transformer": "BERT (fine-tuned)"}
@@ -165,6 +166,24 @@ def main():
     ax.legend(fontsize=8)
     fig.tight_layout()
     fig.savefig(RESULTS_DIR / "error_analysis.png", dpi=130)
+
+    crf_ckpt = MODELS_DIR / "bilstm_crf" / "model.pt"
+    if crf_ckpt.exists():
+        trans = torch.load(crf_ckpt, map_location="cpu", weights_only=True)["state_dict"]["crf.transitions"].numpy()
+        fig, ax = plt.subplots(figsize=(6.5, 5.5))
+        lim = abs(trans).max()
+        im = ax.imshow(trans, cmap="RdBu", vmin=-lim, vmax=lim)
+        ax.set_xticks(range(len(LABELS)), LABELS, rotation=45)
+        ax.set_yticks(range(len(LABELS)), LABELS)
+        for i in range(len(LABELS)):
+            for j in range(len(LABELS)):
+                ax.text(j, i, f"{trans[i, j]:.1f}", ha="center", va="center", fontsize=7)
+        ax.set_xlabel("to tag")
+        ax.set_ylabel("from tag")
+        ax.set_title("Learned CRF transition scores")
+        fig.colorbar(im, ax=ax, shrink=0.8)
+        fig.tight_layout()
+        fig.savefig(RESULTS_DIR / "crf_transitions.png", dpi=130)
 
     fig, ax = plt.subplots(figsize=(7, 4))
     for key, m in models.items():
