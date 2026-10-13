@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+.gradio/
+.claude/
+
+# original download folders
+__MACOSX/
+Named Entity Recognition System/
+
+# large / downloadable artifacts
+data/embeddings/
+models/transformer/
+models/transformer_ckpt/
+
+# dataset is downloaded automatically by ner/data.py
+data/conll2003/
+logs/

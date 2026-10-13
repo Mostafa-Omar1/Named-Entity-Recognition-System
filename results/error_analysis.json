@@ -1,0 +1,29 @@
+{
+  "lstm": {
+    "correct": 4781,
+    "type_error": 401,
+    "boundary_error": 304,
+    "both_error": 245,
+    "missed": 96,
+    "spurious": 187,
+    "invalid_transitions": 313
+  },
+  "bilstm": {
+    "correct": 5063,
+    "type_error": 270,
+    "boundary_error": 123,
+    "both_error": 105,
+    "missed": 119,
+    "spurious": 146,
+    "invalid_transitions": 72
+  },
+  "bilstm_crf": {
+    "correct": 5053,
+    "type_error": 278,
+    "boundary_error": 88,
+    "both_error": 67,
+    "missed": 133,
+    "spurious": 124,
+    "invalid_transitions": 2
+  }
+}

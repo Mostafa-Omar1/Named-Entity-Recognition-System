@@ -1,0 +1,109 @@
+{
+  "train": {
+    "sentences": 14041,
+    "tokens": 203621,
+    "entities": {
+      "ORG": 6321,
+      "MISC": 3438,
+      "PER": 6600,
+      "LOC": 7140
+    },
+    "tags": {
+      "B-ORG": 6321,
+      "O": 169578,
+      "B-MISC": 3438,
+      "B-PER": 6600,
+      "I-PER": 4528,
+      "B-LOC": 7140,
+      "I-ORG": 3704,
+      "I-MISC": 1155,
+      "I-LOC": 1157
+    },
+    "entity_length_distribution": {
+      "1": 14831,
+      "2": 7384,
+      "3": 904,
+      "4": 250,
+      "5": 82,
+      "6": 25,
+      "7": 18,
+      "8": 2,
+      "10": 3
+    },
+    "avg_sentence_length": 14.5,
+    "max_sentence_length": 113,
+    "iob2_violations": 0,
+    "oov_rate_vs_train_vocab": 0.0,
+    "oov_rate_vs_glove": 0.0227
+  },
+  "validation": {
+    "sentences": 3250,
+    "tokens": 51362,
+    "entities": {
+      "ORG": 1341,
+      "LOC": 1837,
+      "MISC": 922,
+      "PER": 1842
+    },
+    "tags": {
+      "O": 42759,
+      "B-ORG": 1341,
+      "B-LOC": 1837,
+      "B-MISC": 922,
+      "I-MISC": 346,
+      "B-PER": 1842,
+      "I-PER": 1307,
+      "I-LOC": 257,
+      "I-ORG": 751
+    },
+    "entity_length_distribution": {
+      "1": 3767,
+      "2": 1857,
+      "3": 205,
+      "4": 83,
+      "5": 19,
+      "6": 3,
+      "7": 6,
+      "10": 2
+    },
+    "avg_sentence_length": 15.8,
+    "max_sentence_length": 109,
+    "iob2_violations": 0,
+    "oov_rate_vs_train_vocab": 0.0836,
+    "oov_rate_vs_glove": 0.0205
+  },
+  "test": {
+    "sentences": 3453,
+    "tokens": 46435,
+    "entities": {
+      "LOC": 1668,
+      "PER": 1617,
+      "MISC": 702,
+      "ORG": 1661
+    },
+    "tags": {
+      "O": 38323,
+      "B-LOC": 1668,
+      "B-PER": 1617,
+      "I-PER": 1156,
+      "I-LOC": 257,
+      "B-MISC": 702,
+      "I-MISC": 216,
+      "B-ORG": 1661,
+      "I-ORG": 835
+    },
+    "entity_length_distribution": {
+      "1": 3574,
+      "2": 1776,
+      "3": 236,
+      "4": 37,
+      "5": 20,
+      "6": 5
+    },
+    "avg_sentence_length": 13.45,
+    "max_sentence_length": 124,
+    "iob2_violations": 0,
+    "oov_rate_vs_train_vocab": 0.1218,
+    "oov_rate_vs_glove": 0.0287
+  }
+}
